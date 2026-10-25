@@ -1,0 +1,13 @@
+kind: check
+schema: 1
+items:
+  - id: K-001
+    target:
+      - R-02
+      - shelf.deflection_mm
+    tier: T2
+    method: hand_calc
+    result: pass
+    by: assistant
+    date: 2026-10-22
+    detail: See docs/03-design.md#deflection.

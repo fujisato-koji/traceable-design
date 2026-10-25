@@ -1,0 +1,10 @@
+kind: interface
+schema: 1
+items:
+  - id: I-01
+    between:
+      - board
+      - bracket
+    carries: load
+    values:
+      - shelf.load_n

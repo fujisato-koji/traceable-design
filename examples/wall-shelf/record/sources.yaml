@@ -1,0 +1,10 @@
+kind: source
+schema: 1
+items:
+  - id: P1
+    class: P
+    title: Wood Handbook, Wood as an Engineering Material, General Technical Report FPL-GTR-282
+    url: https://doi.org/10.2737/FPL-GTR-282
+    license: unknown
+    read: not_read
+    note: USDA Forest Products Laboratory, 2021. Cited only to name where property tables live, no number is taken from it.
