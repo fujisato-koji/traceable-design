@@ -26,6 +26,7 @@ That is why systems engineering can now reach small projects, small firms, and i
 |------|---------|
 | [spec/](spec/) | The standard itself, one chapter per file. |
 | [notes/](notes/) | Raw material: what was done in practice, research, comparisons. |
+| [tools/](tools/) | Scripts, such as [usage_report.py](tools/usage_report.py), which shows where an assistant session spent its tokens. |
 
 ## Passes
 
