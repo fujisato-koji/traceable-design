@@ -71,7 +71,7 @@ Under C those move into data as well, because they are exactly what the assistan
 |------|---------|-------|----------|
 | Requirement | R-nn, R-nna | text, origin, design point, expected value, verification method, basis, status, parent, allocated parts | data |
 | Value | dotted key (`dome.thickness`) | value, unit, status, basis | data |
-| Source | P-nn, S-nn, M-nn, F-nn | class, bibliography, URL, retrieval date, license, how far it was read | data |
+| Source | P12, S3, M5, F2 (class letter and number) | class, bibliography, URL, retrieval date, license, how far it was read | data |
 | Decision | D-nnn | date, who, what was decided, options considered, ids it touches, what it supersedes | data |
 | Open item | Q-nnn | question or finding, waits for, affects, opened, closed by (a decision id) | data |
 | Hazard | H-nn | hazard, phases, people or property at risk, controls (requirement ids, procedure step ids) | data |
@@ -201,7 +201,7 @@ Run logs follow the same split (1.4 of chapter 1).
 | No. | Question | Waits for | Affects |
 |-----|----------|-----------|---------|
 | Q-07 | The token budget of the status sheet (carried from chapter 1). | measurement on the trial | F-3 |
-| Q-08 | The format of data files: YAML with a strict subset (no flow style, after the comma accident behind E17), JSON, or TOML. | chapter 3 | F-2 |
+| Q-08 | (Settled: YAML restricted to a subset that a standard-library reader accepts, D-011, 3.2 of chapter 3.) The format of data files. | chapter 3 | F-2 |
 | Q-09 | Whether the lookup and brief commands are part of the standard, or only an example of how to meet it. | owner | F-3, S-13 |
 | Q-10 | How the worked example moves its requirements, sources, decisions, and open items from prose into data. | pass 6 | F-2 |
 
