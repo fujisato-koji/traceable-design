@@ -56,7 +56,7 @@ Inventory taken on 2026-10-25 from the main branch at that date.
 | I-08 | 2026-09 (other work) | A review explained thirteen issues and the direction of each fix, without the current and proposed text. The owner could not tell what was at issue. | S-05 |
 | I-09 | 2026-09 (other work) | A guideline gave formulas and thresholds with no stated source, so neither their validity nor their fit could be checked. A standard that traced its threshold to injury data and primary experiments was chosen instead. | S-02 |
 | I-10 | 2026-10-17 to 2026-10-22 | The owner decided everything by answering questions in conversation, for example lowering the loaves per day from 12 to 6 and withdrawing the requirement to move the oven. The assistant wrote all the data files and recorded each decision with its date. | S-04, S-12 |
-| I-11 | 2026-10-25 | The usage of the session was measured from its transcripts. Re-reading context took most of the cost, not writing. Delegated helpers, each re-reading the whole design, took the largest share, the main conversation carried a long history on every turn, and the two days of rework after late requirements were the costliest period. | S-15, S-10 |
+| I-11 | 2026-10-25 | The usage of the session was measured from its transcripts. Re-reading context took most of the cost, not writing. Delegated helpers, each re-reading the whole design, took the largest share, the main conversation carried a long history on every turn, and the two days of rework after late requirements were the costliest period. Details in [token-case-study.md](token-case-study.md). | S-15, S-10 |
 
 ## Gaps
 
