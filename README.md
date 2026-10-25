@@ -32,7 +32,7 @@ That is why systems engineering can now reach small projects, small firms, and i
 The standard is developed the way it asks a design to be developed.
 
 1. Requirements of the standard: [spec/01-requirements.md](spec/01-requirements.md) (draft).
-2. Form: the actors, the files of a record, the phases of life and the order of work in each, the tiers of change.
+2. Form: the actors, the files of a record, the phases of life and the order of work in each, the tiers of change: [spec/02-form.md](spec/02-form.md) (draft).
 3. Rules and checks: each rule serves a requirement and says who or what checks it.
 4. Template and checks taken out of the worked example, so a new project can start from them.
 5. Trial on a small example and on a new project, judged against the design points of chapter 1.
