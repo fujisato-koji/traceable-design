@@ -5,7 +5,7 @@ It turns the form of [chapter 2](02-form.md) into rules a project follows and ch
 Each rule (N-nn) names the requirements of [chapter 1](01-requirements.md) it serves and who or what checks it.
 Each check code (E-nn) is something a script refuses.
 
-The tools named here (`trace check`, `trace get`, and so on) are a reference implementation.
+The tools named here (`tdr check`, `tdr get`, and so on) are the reference implementation in [tools/tdr.py](../tools/tdr.py), which uses the Python standard library only.
 The standard requires their behaviour, not their names (Q-09).
 
 ## 3.1 Layout of a record
@@ -18,7 +18,8 @@ record/
   decisions.yaml      D-nnn
   open.yaml           Q-nnn (questions, findings, notices)
   hazards.yaml        H-nn
-  parts.yaml          part ids, interfaces I-nn
+  parts.yaml          part ids
+  interfaces.yaml     I-nn
   checks.yaml         K-nnn
   shared.yaml         shared items cited, and responses to notices
   config/B-nn.yaml    baselines: as designed, as built, as operated
@@ -56,9 +57,9 @@ The reader uses only the standard library, and anything outside the subset fails
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
 | N-04 | Block style only. No flow style (`{}` or `[]` on one line), no anchors or aliases, no tags, one document per file. | S-07, S-13 | E01 |
-| N-05 | A string that contains `#`, `: `, or starts with a character YAML treats specially is quoted. | S-07 | E01 |
-| N-06 | Each file starts with `kind:` and `schema:` (the version of its schema). Keys are lowercase with underscores. Unknown keys are refused. | S-07 | E01, E21 |
-| N-07 | UTF-8, LF line ends. Dates as YYYY-MM-DD. A number and its unit are separate fields. SI units; K for temperature differences. | S-01 | E01 |
+| N-05 | Comments stand on their own lines; nothing after a value is a comment. A string that contains ` #` or `: `, or starts with a character YAML treats specially, is quoted, so that no value is ever cut short silently. | S-07 | E01 |
+| N-06 | Each file has three top-level keys: `kind:`, `schema:` (the version of its schema), and `items:` (the list of facts). Keys and allowed values are lowercase with underscores. An empty list is the key with no value. Unknown keys are refused. | S-07 | E01, E21, E22 |
+| N-07 | UTF-8, LF line ends. Dates as YYYY-MM-DD. A number and its unit are separate fields. SI units; K for temperature differences. | S-01 | E01, E22 |
 
 ## 3.3 Kinds of fact
 
@@ -69,17 +70,17 @@ Every list of references (`basis`, `touches`, `affects`, `controls`) holds ids o
 |------|--------|----------------|
 | Requirement | **id**, **text**, **origin**, **design_point**, expected, **verify**, **basis**, **status**, parent, parts | origin: owner, derived. verify: inspection, analysis, demonstration, test. status: awaiting (derived, not yet confirmed by the owner), confirmed, withdrawn. |
 | Value | **key**, **v**, unit, **status**, **basis** | status: decided, sourced, calculated, measured, assumed. |
-| Source | **id**, **class**, **title**, url, **retrieved**, **license**, **read**, note | class: P primary, S secondary, M sales page, F forum. license: a name, or unknown. read: full, partial, abstract, excerpt, archived, not read. |
+| Source | **id**, **class**, **title**, url, **retrieved**, **license**, **read**, note | class: P primary, S secondary, M sales page, F forum, matching the letter of the id. license: a name, or unknown. read: full, partial, abstract, excerpt, archived, not_read. `retrieved` may be left out only when read is not_read. |
 | Decision | **id**, **date**, **by**, **what**, options, **touches**, supersedes | by: owner, operator (within a delegation, Q-06). |
-| Open item | **id**, **kind**, **text**, **waits_for**, **affects**, **opened**, raised_by, phase, run, closed_by, closed | kind: question, finding, notice. phase: design, build, operate, change, remove. closed_by: a decision or a check. |
+| Open item | **id**, **kind**, **text**, **waits_for**, **affects**, **opened**, raised_by, phase, run, blocks, closed_by, closed | kind: question, finding, notice. phase: design, build, operate, change, remove. blocks: the gate it must be closed before. closed_by: a decision or a check. |
 | Hazard | **id**, **text**, **phases**, **at_risk**, **controls** | controls: requirement ids and procedure step ids. |
 | Part | **id**, **name**, parent | |
 | Interface | **id**, **between** (two part ids), **carries**, values | carries: load, heat, gas, liquid, power, signal, smoke, other. |
-| Check | **id**, **target**, **tier**, **method**, **result**, **by**, **date**, detail | method: script, refute, independent model, hand calculation, inspection, analysis, demonstration, test, measurement. result: pass, fail, partial. |
-| Baseline | **id**, **kind**, **date**, **decision**, deviations | kind: as designed, as built, as operated. Each deviation: key, design value, built value, decision. |
+| Check | **id**, **target**, **tier**, **method**, **result**, **by**, **date**, detail | method: script, refute, independent_model, hand_calc, inspection, analysis, demonstration, test, measurement. result: pass, fail, partial. |
+| Baseline | **id**, **kind**, **date**, **decision**, deviations | kind: as_designed, as_built, as_operated. Each deviation: key, design value, built value, decision. |
 | Run | **id**, **date**, **procedure**, conditions, measured, deviations, findings | measured: key, value, unit, how measured. |
 | Procedure | **id**, **title**, **steps** | Each step: id (OP-nn.nn), action, values by key, controls (hazard ids), limits (keys). |
-| Shared citation | **ref**, **used_for**, responses | ref: a global id with a version. Each response: notice, answer (adopted, not applicable, open), decision or open item. |
+| Shared citation | **ref**, **used_for**, responses | ref: a global id with a version. Each response: notice, answer (adopted, not_applicable, open), by_id (a decision or an open item). |
 
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
@@ -95,17 +96,17 @@ Every list of references (`basis`, `touches`, `affects`, `controls`) holds ids o
 
 | Command | Returns |
 |---------|---------|
-| `trace status` | Writes `STATUS.md`: phase and next gate, baseline in force, open items grouped by whom they wait for, the last ten decisions, unanswered notices, failing checks, and next steps. |
-| `trace get <id or key>` | The item, its status, and its basis, one level deep, in a few lines. |
-| `trace refs <id or key>` | Every item that refers to it. |
-| `trace brief <ids>` | What a helper needs for a task on those ids: the items, their requirements and values, the interfaces of the parts, open items that touch them, and the ids of reasoning sections to read. |
+| `tdr status` | Writes `STATUS.md`: phase and next gate, baseline in force, open items grouped by whom they wait for, the last ten decisions, unanswered notices, failing checks, and next steps. |
+| `tdr get <id or key>` | The item, its status, and its basis, one level deep, in a few lines. |
+| `tdr refs <id or key>` | Every item that refers to it. |
+| `tdr brief <ids>` | What a helper needs for a task on those ids: the items, their requirements and values, the interfaces of the parts, open items that touch them, and the ids of reasoning sections to read. |
 
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
 | N-15 | `STATUS.md` stays within 10,000 tokens (design point); 5,000 is the expected value. Tokens are estimated as ASCII characters divided by 4 plus other characters divided by 1.5. | S-15 | E14 |
 | N-16 | A helper starts from a brief, plus the question. It reads documents only by section id, when the brief points to them. | S-15 | owner review |
 | N-17 | The lead conversation ends at every gate, and when its context passes 200,000 tokens. The next one starts from `STATUS.md`. | S-09, S-15 | owner review |
-| N-18 | Values are looked up with `trace get`, not by searching documents. | S-15 | owner review |
+| N-18 | Values are looked up with `tdr get`, not by searching documents. | S-15 | owner review |
 
 The rules checked by owner review are carried by the Agent Skill (3.8), since no script can see how the assistant read.
 `tools/usage_report.py` measures whether they held.
@@ -123,9 +124,9 @@ Decision: D-022
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
 | N-19 | Every change states its tier (T0 record, T1 value, T2 claim, T3 limit). | S-11 | E11 |
-| N-20 | A T2 change cites a check whose method is refute, independent model, or hand calculation, made by someone other than the author. | S-06 | E11 |
+| N-20 | A T2 change cites a check whose method is refute, independent_model, or hand_calc, made by someone other than the author. | S-06 | E11 |
 | N-21 | A T3 change cites a decision, and the hazards whose controls it touches are listed in that decision. A T3 change to something running is not merged during a run. | S-04, S-08 | E12 |
-| N-22 | `trace check --gate <gate>` adds the conditions of that gate in 2.5 of chapter 2. A gate is passed by a decision that cites a clean gate check. | S-04, S-09 | E09, E16, E20 |
+| N-22 | `tdr check --gate <gate>` adds the conditions of that gate in 2.5 of chapter 2. A gate is passed by a decision that cites a clean gate check. | S-04, S-09 | E09, E16, E20 |
 
 ## 3.6 Shared items
 
@@ -137,7 +138,7 @@ A project cites it in `shared.yaml` and uses it in a basis like any local id.
 | N-23 | A published version never changes. A wrong one is marked withdrawn, with a reason, and kept. | S-20 | E15 |
 | N-24 | Each version lists the checks that verified it and who made them. | S-06, S-20 | E15 |
 | N-25 | A change or a withdrawal of an item creates a notice in every project that cites it, as an open item of kind notice. | S-22 | E16 |
-| N-26 | Each notice gets an answer before the next gate: adopted (with the tier of the change it brings), not applicable (tier T0), or open with whom it waits for. | S-22 | E16 |
+| N-26 | Each notice gets an answer before the next gate: adopted (with the tier of the change it brings), not_applicable (tier T0), or open with whom it waits for. | S-22 | E16 |
 | N-27 | A project that checks, corrects, or refreshes a shared item offers the result back to the item's home, after its own private-name check passes. | S-23, S-14 | owner review |
 | N-28 | A shared item carries derived values only, and passes the private-name check of the project that publishes it. | S-14 | E13 |
 
@@ -146,7 +147,7 @@ A project cites it in `shared.yaml` and uses it in a basis like any local id.
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
 | N-29 | Private facts live in a private store outside the public record, with the same ids. A value derived from one has the basis `private:<id>`. | S-09, S-14 | E03 |
-| N-30 | The list of private names lives in the private store. `trace check` reads it from a path or an environment variable, and fails on any match in the public record. | S-14 | E13 |
+| N-30 | The list of private names lives in the private store. `tdr check` reads it from a path or an environment variable, fails on any match in the public record, and never prints the name it found. | S-14 | E13 |
 
 ## 3.8 Rules for the assistant
 
@@ -188,6 +189,13 @@ They go into the Agent Skill, and the owner checks them in review.
 | E19 | A deviation without a decision | N-13 |
 | E20 | A gate condition of 2.5 of chapter 2 not met | N-22 |
 | E21 | An unknown key | N-06 |
+| E22 | A required field missing, a value not among the allowed values, an id, key, or date in the wrong form, or a source class that does not match its id | N-06, N-07 |
+
+### What the reference tool does not check yet
+
+- E15 checks only that a citation has a version in the right form. Whether a published version changed, and whether a version lists its checks, need the item's home and are left to a later service.
+- E10 compares `STATUS.md` and generated tables. It does not find a value restated in prose.
+- N-20's "someone other than the author" is not compared with the change's author.
 
 ## 3.10 Open items
 
@@ -202,4 +210,4 @@ They go into the Agent Skill, and the owner checks them in review.
 | Where | What |
 |-------|------|
 | Chapter 2, 2.3 | Source marks take the form P12 (3.1). |
-| Pass 4 | The reference tools: the YAML subset reader, `trace check`, `status`, `get`, `refs`, `brief`, an MCP server with the same calls, the Agent Skill with 3.8, and a template with the layout of 3.1. |
+| Pass 4 | Done in [tools/tdr.py](../tools/tdr.py) (the YAML subset reader, `check`, `status`, `get`, `refs`, `brief`, `tier`, and an MCP server with the same calls), [skill/traceable-design/SKILL.md](../skill/traceable-design/SKILL.md) (3.8 and the order of work), and [template/](../template/) (the layout of 3.1). |

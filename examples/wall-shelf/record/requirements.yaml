@@ -1,0 +1,45 @@
+kind: requirement
+schema: 1
+items:
+  - id: R-01
+    text: The shelf carries its design load without failure.
+    origin: owner
+    design_point: Carry shelf.load_n at mid-span.
+    verify: analysis
+    basis:
+      - D-001
+    status: confirmed
+    parts:
+      - board
+      - bracket
+  - id: R-02
+    text: The shelf does not sag visibly under its design load.
+    origin: owner
+    design_point: Mid-span deflection under shelf.load_n stays below shelf.deflection_limit_mm.
+    expected: Calculated deflection is shelf.deflection_mm.
+    verify: analysis
+    basis:
+      - D-002
+    status: confirmed
+    parts:
+      - board
+  - id: R-03
+    text: The shelf is fixed to the wall so that it cannot fall.
+    origin: owner
+    design_point: Two brackets, each fixed with screw.count screws.
+    verify: inspection
+    basis:
+      - D-001
+    status: confirmed
+    parts:
+      - bracket
+      - screw
+  - id: R-04
+    text: The shelf can be removed without damage to the wall beyond the screw holes.
+    origin: derived
+    design_point: Each screw can be unscrewed with a hand tool.
+    verify: demonstration
+    basis:
+      - R-03
+    status: confirmed
+    parent: R-03

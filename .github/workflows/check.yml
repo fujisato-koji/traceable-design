@@ -1,0 +1,21 @@
+name: check
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the tests
+        run: python tools/tests/test_tdr.py
+      - name: Check the example record
+        run: python tools/tdr.py check --root examples/wall-shelf
+      - name: Check the template
+        run: python tools/tdr.py check --root template
+      - name: Check the copies
+        run: python tools/sync_copies.py --check

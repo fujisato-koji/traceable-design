@@ -1,0 +1,22 @@
+kind: decision
+schema: 1
+items:
+  - id: D-001
+    date: 2026-10-20
+    by: owner
+    what: Adopt the load, span, board size, and screw count recorded in values.yaml for the fixture shelf.
+    touches:
+      - R-01
+      - R-03
+      - shelf.load_n
+      - shelf.span_mm
+      - board.width_mm
+      - board.thickness_mm
+      - screw.count
+  - id: D-002
+    date: 2026-10-21
+    by: owner
+    what: Set the deflection limit as a fraction of the span.
+    touches:
+      - R-02
+      - shelf.deflection_limit_mm

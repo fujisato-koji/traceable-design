@@ -1,0 +1,55 @@
+kind: value
+schema: 1
+items:
+  - key: shelf.load_n
+    v: 200
+    unit: N
+    status: decided
+    basis:
+      - D-001
+  - key: shelf.span_mm
+    v: 600
+    unit: mm
+    status: decided
+    basis:
+      - D-001
+  - key: shelf.deflection_limit_mm
+    v: 3
+    unit: mm
+    status: decided
+    basis:
+      - D-002
+  - key: board.width_mm
+    v: 200
+    unit: mm
+    status: decided
+    basis:
+      - D-001
+  - key: board.thickness_mm
+    v: 18
+    unit: mm
+    status: decided
+    basis:
+      - D-001
+  - key: board.modulus_mpa
+    v: 9000
+    unit: MPa
+    status: assumed
+    basis:
+      - Q-001
+  - key: board.property_table
+    v: Wood Handbook chapter on mechanical properties
+    status: sourced
+    basis:
+      - P1
+  - key: shelf.deflection_mm
+    v: 1.03
+    unit: mm
+    status: calculated
+    basis:
+      - K-001
+  - key: screw.count
+    v: 4
+    status: decided
+    basis:
+      - D-001

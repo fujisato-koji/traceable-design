@@ -1,0 +1,11 @@
+kind: open
+schema: 1
+items:
+  - id: Q-001
+    kind: question
+    text: Confirm the modulus of elasticity of the chosen board.
+    waits_for: owner
+    affects:
+      - board.modulus_mpa
+    opened: 2026-10-21
+    phase: design

@@ -1,0 +1,10 @@
+kind: hazard
+schema: 1
+items:
+  - id: H-01
+    text: The shelf falls from the wall.
+    phases:
+      - operate
+    at_risk: A person standing below the shelf.
+    controls:
+      - R-03

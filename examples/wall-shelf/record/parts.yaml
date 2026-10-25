@@ -1,0 +1,9 @@
+kind: part
+schema: 1
+items:
+  - id: board
+    name: Shelf board
+  - id: bracket
+    name: Wall bracket
+  - id: screw
+    name: Fixing screw
