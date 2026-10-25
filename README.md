@@ -20,7 +20,33 @@ A record built the systems engineering way lets it read only what a task needs.
 So the same structure that makes a design accountable to people also makes it cheap for the assistant.
 That is why systems engineering can now reach small projects, small firms, and individual makers.
 
-## Layout
+## The state we aim for
+
+Someone designs a thing, someone procures and makes its parts, someone builds it, and someone runs it.
+What each of them learns always comes back: to the record of that thing, to the projects that follow, and to this standard.
+Each new project starts from what the earlier ones verified, so everyone develops and runs things efficiently, and the standard keeps getting better from its use.
+
+This is what putting AI to real use in the physical world means today.
+An assistant cannot pick up a brick.
+It reaches the physical world through the people who procure, make, build, and run things, and it learns about that world only from what they measure and report.
+The record is the channel between them.
+When the channel is precise and the loop closes, the assistant's work becomes things that stand and run; when it is not, the assistant designs blind.
+Robots that can build in an open yard will take a long time, and when they come they will need the same record: exact values, procedures, and limits to work to, and a place to report what they measured.
+So the record is not a stopgap until physical AI arrives; it is the layer physical AI will plug into.
+
+## How it spreads
+
+The standard is laid out in three layers, following what lasted in other fields ([notes/prior-art.md](notes/prior-art.md)).
+
+1. **The standard**: plain files that any assistant can read and write, kept by a community and, once others adopt it, by a neutral body.
+2. **Tools that pay off for one team alone**: an Agent Skill, an MCP server for looking up the record, a template, and checks. Nothing else is needed to benefit.
+3. **Services on top**: a registry of shared items, the graph of who cites what, and notices when an item changes or is withdrawn. These come only after projects cite each other's items, and anyone may run them.
+
+The first cluster is individual makers and makers near the owner.
+First uses are sought where a receiver can ask for the format: a course that takes design work in it, and a maker who quotes from it.
+Success is first measured by how many projects cite the same shared item.
+
+
 
 | Path | Content |
 |------|---------|
@@ -38,6 +64,7 @@ The standard is developed the way it asks a design to be developed.
 4. Template and checks taken out of the worked example, so a new project can start from them.
 5. Trial on a small example and on a new project, judged against the design points of chapter 1.
 6. The worked example moved onto the template.
+7. The first full loop: the worked example built and fired, and its findings returned to its own record and to this standard.
 
 ## Worked example
 
