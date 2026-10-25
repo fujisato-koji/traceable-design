@@ -36,7 +36,7 @@ It makes the reasoning behind the thing visible, so that people can judge it.
 
 ## 1.2 Requirements
 
-Origin is one of: practice (seen to work, or seen to be missing, on a real project), derived (follows from the aim of the standard), owner (the owner set it).
+Origin is one of: practice (seen to work, or seen to be missing, on a real project), prior art (seen in other systems, [notes/prior-art.md](../notes/prior-art.md)), derived (follows from the aim of the standard), owner (the owner set it).
 Status is draft for every row until the standard reaches its first release.
 
 | ID | Requirement | Design point (pass or fail) | Expected value | Origin | Status |
@@ -60,7 +60,9 @@ Status is draft for every row until the standard reaches its first release.
 | S-17 | Operation closes the loop | Each design point gets a result (pass, fail, or not yet) from the first use, and each measured value names the run that measured it. | After each run, a script compares the measurements with the model's predictions, and each difference goes back to the stage that owns it. | practice | draft |
 | S-18 | Procedures come from the record | Every value in an operating or maintenance procedure resolves to a value in the record, and every hazard control of S-08 appears in a procedure step. | Changing a value in the record changes the procedure without hand editing. | practice | draft |
 | S-19 | Findings reach the designer | Every finding is an open item that names the item it concerns, the phase and run it came from, and who raised it, and it appears in the design side's status sheet, even when other people or firms make, build, or run the thing. | A finding from a run reaches the design record before the next run, and its fix traces back to it. | owner | draft |
-| S-20 | What one project learns, the next can use | A project can cite a shared item by id and version, the checks of S-07 resolve it, and a change to a shared item reaches every project that cites it. | On a new project, a measured share of values rests on shared items instead of new research, and the change costs fewer tokens for it. | owner | draft |
+| S-20 | What one project learns, the next can use | A project can cite a shared item by id and version, and the checks of S-07 resolve it. A published version never changes, a wrong one is marked withdrawn rather than deleted, and each version names who verified it and how. | On a new project, a measured share of values rests on shared items instead of new research, and the change costs fewer tokens for it. | owner | draft |
+| S-22 | Notices are answered | A change or a withdrawal of a shared item reaches every project that cites it as a notice, and each project records its response: adopted, not applicable, or open with whom it waits for. | No notice stays unanswered past the next gate of the project that cites the item. | prior art | draft |
+| S-23 | Use writes back | When an assistant checks, corrects, or refreshes a shared item while using it, it offers the result back to the item's home, with who did it and how. | Most updates of shared prices and availability come from the projects that use them. | prior art | draft |
 | S-21 | The standard learns from its use | Every rule of the standard traces to a requirement and to evidence, and projects have a fixed form and place to report incidents and gaps against the standard's requirements. | After the first release, most changes to the standard come from reports by projects other than the worked example. | owner | draft |
 
 ## 1.3 Reading the requirements
@@ -133,7 +135,7 @@ Status is draft for every row until the standard reaches its first release.
 - S-18: A procedure written by hand drifts from the design it came from.
     In practice, the tables of the firing procedure were checked against the thermal model by script (C-27).
 
-### Loops (S-19 to S-21)
+### Loops (S-19 to S-23)
 
 - S-19 to S-21 come from the owner's aim for the standard (2026-10-25).
     Someone designs, someone makes and builds, someone runs the thing, and what they learn always comes back.
@@ -146,6 +148,13 @@ Status is draft for every row until the standard reaches its first release.
     A verified model or a checked source is worth most when the next project does not have to verify it again.
 - S-21: This repository follows the rule itself: chapter 1 traces each requirement to conventions and incidents of practice.
     For the standard to keep improving, that evidence has to come from many projects, not one.
+    Reports have to be protected and have a keeper that does not punish, because anonymity alone did not bring reports in other fields (L-06), and rewarding volume lowered quality (L-12).
+- S-20: Package registries show what makes shared items safe to depend on: versions that never change, withdrawal without deletion, and a record of who published what (L-01).
+    What gets shared among competitors is what does not set them apart, such as failure rates of common equipment (L-05).
+- S-22: In other fields, feedback across organizations closed the loop only where a lesson became a required action and the action was checked (L-04).
+    A notice that can be ignored is a store, and a store alone was not used.
+- S-23: Prices and part numbers kept by hand go stale first (L-10).
+    A commons that assistants read but never write back to shrinks, while one that its users fix for their own needs stays fresh (L-11).
 
 ## 1.4 Conflicts between requirements
 
@@ -161,6 +170,8 @@ Status is draft for every row until the standard reaches its first release.
 | S-04 and S-19 | When making or running is done by another firm, who decides on a finding? | The owner of the design decides on changes to it; the maker or the operator decides how to work within it, and raises a finding when it cannot. |
 | S-14 and S-20 | A shared item must not carry the private facts of the project it came from. | A shared item keeps derived values only, and passes the S-14 check of the project that publishes it. |
 | S-13 and S-20 | Sharing tends to call for a central service. | Shared items are plain files in public repositories, cited by id and version, like any other source. |
+| S-11 and S-22 | Answering every notice costs effort. | A response of not applicable is tier T0; adopting a change takes the tier of the change it brings. |
+| S-14 and S-23 | Writing back can carry private facts out. | The S-14 check runs on what is offered back, before it leaves the project. |
 | S-14 and S-21 | A firm's private project cannot publish its record. | A report to the standard names only requirement ids, incident kinds, and measured shares, not the project's content. |
 
 ## 1.5 Open questions

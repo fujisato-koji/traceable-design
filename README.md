@@ -34,7 +34,19 @@ When the channel is precise and the loop closes, the assistant's work becomes th
 Robots that can build in an open yard will take a long time, and when they come they will need the same record: exact values, procedures, and limits to work to, and a place to report what they measured.
 So the record is not a stopgap until physical AI arrives; it is the layer physical AI will plug into.
 
-## Layout
+## How it spreads
+
+The standard is laid out in three layers, following what lasted in other fields ([notes/prior-art.md](notes/prior-art.md)).
+
+1. **The standard**: plain files that any assistant can read and write, kept by a community and, once others adopt it, by a neutral body.
+2. **Tools that pay off for one team alone**: an Agent Skill, an MCP server for looking up the record, a template, and checks. Nothing else is needed to benefit.
+3. **Services on top**: a registry of shared items, the graph of who cites what, and notices when an item changes or is withdrawn. These come only after projects cite each other's items, and anyone may run them.
+
+The first cluster is individual makers and makers near the owner.
+First uses are sought where a receiver can ask for the format: a course that takes design work in it, and a maker who quotes from it.
+Success is first measured by how many projects cite the same shared item.
+
+
 
 | Path | Content |
 |------|---------|
