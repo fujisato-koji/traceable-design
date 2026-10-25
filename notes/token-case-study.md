@@ -46,7 +46,8 @@ The main conversation's context reached 875,805 tokens at the 90th percentile an
 | 2026-10-21 | 12.5 % | Door stages, a front without a chimney, part visibility in 3D |
 | 2026-10-22 | 2.4 % | Temperature contours in 3D |
 
-The two days of rework after late requirements took 53 %.
+The two days when late requirements forced rework took 53 %.
+Not all of their work was rework: two navigator modes were also added on 2026-10-18.
 
 ### What filled the context
 
@@ -61,7 +62,7 @@ The two days of rework after late requirements took 53 %.
 
 | What happened | Systems engineering tool | Effect for the assistant |
 |---------------|-------------------------|--------------------------|
-| Rework after late requirements took half the tokens. | Stakeholder needs analysis; early checks of availability and cost | Fewer rounds of rework |
+| The two days when late requirements forced rework took half the tokens. | Stakeholder needs analysis; early checks of availability and cost | Fewer rounds of rework |
 | Every agent re-read the whole design. | Allocation of requirements; interface control | A helper gets its part and the part's interfaces only |
 | The main conversation carried its history on every turn. | Baselines; configuration management; phase gates | End the conversation at a gate and start the next from one status sheet |
 | Values were found by reading documents through the shell. | A model that can be queried | An id returns the value and its basis in one line |
