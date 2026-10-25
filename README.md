@@ -50,7 +50,7 @@ Success is first measured by how many projects cite the same shared item.
 
 | Path | Content |
 |------|---------|
-| [spec/](spec/) | The standard itself, one chapter per file. |
+| [spec/](spec/) | The standard itself, one chapter per file, and [the decisions](spec/decisions.md) made about it. |
 | [notes/](notes/) | Raw material: what was done in practice, research, comparisons. |
 | [tools/](tools/) | Scripts, such as [usage_report.py](tools/usage_report.py), which shows where an assistant session spent its tokens. |
 
@@ -60,7 +60,7 @@ The standard is developed the way it asks a design to be developed.
 
 1. Requirements of the standard: [spec/01-requirements.md](spec/01-requirements.md) (draft).
 2. Form: the actors, the files of a record, the phases of life and the order of work in each, the tiers of change: [spec/02-form.md](spec/02-form.md) (draft).
-3. Rules and checks: each rule serves a requirement and says who or what checks it.
+3. Rules and checks: each rule serves a requirement and says who or what checks it: [spec/03-rules.md](spec/03-rules.md) (draft).
 4. Template and checks taken out of the worked example, so a new project can start from them.
 5. Trial on a small example and on a new project, judged against the design points of chapter 1.
 6. The worked example moved onto the template.
