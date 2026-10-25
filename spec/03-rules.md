@@ -32,7 +32,7 @@ STATUS.md             generated, never edited by hand
 |------|------|--------|------------|
 | N-01 | Each kind of fact lives in one place in `record/`. Prose in `docs/` cites facts by id and never restates a value except in a generated table. | S-07, S-15 | E10 |
 | N-02 | Tables in `docs/` that show facts are generated between markers and never edited by hand. | S-07 | E10 |
-| N-03 | `STATUS.md` is generated on every change. | S-09, S-15 | E14 |
+| N-03 | `STATUS.md` is generated on every change. | S-09, S-15 | E10, E14 |
 
 Source marks keep the form of the worked example (P12, not P-12), so that they do not look like the requirement ids of this standard.
 
@@ -83,7 +83,7 @@ Every list of references (`basis`, `touches`, `affects`, `controls`) holds ids o
 
 | Rule | Text | Serves | Checked by |
 |------|------|--------|------------|
-| N-08 | A value's status matches its basis: decided cites a decision, sourced a source, calculated a check or a section of reasoning, measured a run, and assumed an open item. | S-01, S-17 | E05 |
+| N-08 | A value's status matches its basis: decided cites a decision, sourced a source, calculated a check or a section of reasoning, measured a run, and assumed an open item. | S-01, S-17 | E04, E05 |
 | N-09 | A design point never rests on forum sources alone. A borrowed threshold notes the conditions it was derived under in its source's note. | S-02 | E06 |
 | N-10 | Every requirement with a numeric measure has a design point; an expected value never appears without one. | S-03 | E07 |
 | N-11 | Every requirement carries a verification method. | S-03, S-17 | E08 |
