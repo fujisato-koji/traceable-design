@@ -27,6 +27,7 @@ Every selection in this chapter is a recommendation until the owner decides it.
 | Owner | Decide requirements, limits, deadlines, options, budgets, and anything hard to undo. Approve a change into the record. | (nothing is withheld) |
 | Operator | Run the thing within the limits and procedures the owner set. Stop a run. | Change a limit or a procedure. Resume after a limit was reached, unless the owner delegated that (Q-06). |
 | Lead assistant | Write the record. Propose options with a recommendation. Start helpers and checkers. Advise during a run. | Decide anything in the owner's column. Relax a limit, a deadline, or a margin. |
+| Maker | Procure, manufacture, or build to the record. Record what was made and how, and each deviation. Raise findings. | Change the design. Accept a deviation without the owner's decision (S-16). |
 | Helper | Do one task from a brief and write its result on its own branch or in a result file. | Widen its task beyond the brief. Decide. |
 | Checker | Check a claim or a change independently and report findings. | Edit the claim it checks, for changes of tier T2 or T3 (2.6). |
 

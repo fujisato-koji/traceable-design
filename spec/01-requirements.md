@@ -18,6 +18,7 @@ It makes the reasoning behind the thing visible, so that people can judge it.
 |------|---------|
 | Owner | The person who wants the thing and holds the decisions. In a personal project, the owner is often also the builder and the operator. |
 | Operator | The person who runs the thing within the limits the owner set. |
+| Maker | A person or a firm that procures, manufactures, or builds parts or the whole thing to the record. Often not the owner. |
 | Assistant | The AI that researches, calculates, writes the record, proposes options, and advises in operation. |
 | Checker | Anything that checks the assistant's output independently: a script, a second assistant session told to refute a claim, or a person. |
 | Record | Everything written about the thing, kept in plain files under version control. |
@@ -30,6 +31,8 @@ It makes the reasoning behind the thing visible, so that people can judge it.
 | Operating limit | A value that must not be passed during a run without a decision. |
 | Decision | A choice the owner made, with its date. |
 | Open item | A question not yet decided, or a finding not yet resolved, with who it waits for. |
+| Finding | Something learned while procuring, making, building, or running the thing that may change its record. |
+| Shared item | A source, a model, a part with its availability and price, or a lesson, published so that other projects can cite it by id and version. |
 
 ## 1.2 Requirements
 
@@ -56,6 +59,9 @@ Status is draft for every row until the standard reaches its first release.
 | S-16 | The record follows the thing through its life | The record keeps the as-designed and the as-built configurations apart, and every deviation in building links the design value, the built value, and the owner's decision. | Anyone can tell from the record what is standing now, without visiting it. | derived | draft |
 | S-17 | Operation closes the loop | Each design point gets a result (pass, fail, or not yet) from the first use, and each measured value names the run that measured it. | After each run, a script compares the measurements with the model's predictions, and each difference goes back to the stage that owns it. | practice | draft |
 | S-18 | Procedures come from the record | Every value in an operating or maintenance procedure resolves to a value in the record, and every hazard control of S-08 appears in a procedure step. | Changing a value in the record changes the procedure without hand editing. | practice | draft |
+| S-19 | Findings reach the designer | Every finding is an open item that names the item it concerns, the phase and run it came from, and who raised it, and it appears in the design side's status sheet, even when other people or firms make, build, or run the thing. | A finding from a run reaches the design record before the next run, and its fix traces back to it. | owner | draft |
+| S-20 | What one project learns, the next can use | A project can cite a shared item by id and version, the checks of S-07 resolve it, and a change to a shared item reaches every project that cites it. | On a new project, a measured share of values rests on shared items instead of new research, and the change costs fewer tokens for it. | owner | draft |
+| S-21 | The standard learns from its use | Every rule of the standard traces to a requirement and to evidence, and projects have a fixed form and place to report incidents and gaps against the standard's requirements. | After the first release, most changes to the standard come from reports by projects other than the worked example. | owner | draft |
 
 ## 1.3 Reading the requirements
 
@@ -127,6 +133,20 @@ Status is draft for every row until the standard reaches its first release.
 - S-18: A procedure written by hand drifts from the design it came from.
     In practice, the tables of the firing procedure were checked against the thermal model by script (C-27).
 
+### Loops (S-19 to S-21)
+
+- S-19 to S-21 come from the owner's aim for the standard (2026-10-25).
+    Someone designs, someone makes and builds, someone runs the thing, and what they learn always comes back.
+    It comes back to the record of that thing (S-19), to the projects that follow (S-20), and to this standard (S-21), so that everyone develops and runs things efficiently.
+- The assistant cannot touch the thing.
+    Findings and measurements from the people who make, build, and run it are its only senses of the physical world, and the record is its only way to act on it.
+- S-19: The worked example has one person in every role, so findings never had to cross a boundary.
+    Once making or running is done by someone else, a finding that is not tied to an item and not shown to the designer is lost.
+- S-20: In the worked example, every source, model, and price was found from scratch, and research took a large share of the helpers' work (I-11).
+    A verified model or a checked source is worth most when the next project does not have to verify it again.
+- S-21: This repository follows the rule itself: chapter 1 traces each requirement to conventions and incidents of practice.
+    For the standard to keep improving, that evidence has to come from many projects, not one.
+
 ## 1.4 Conflicts between requirements
 
 | Conflict | What | Where it settles |
@@ -138,6 +158,10 @@ Status is draft for every row until the standard reaches its first release.
 | S-01 and S-12 | Full traceability is a burden a first-time maker will not carry. | The assistant writes every status and basis; the owner only decides. |
 | S-12 and S-16 | Recording what was built asks more of the builder. | The builder gives photos, notes, or answers; the assistant writes the as-built record. |
 | S-07 and S-13 | Machine checks tend to grow dependencies. | Checks are plain scripts with no network access and no paid service. |
+| S-04 and S-19 | When making or running is done by another firm, who decides on a finding? | The owner of the design decides on changes to it; the maker or the operator decides how to work within it, and raises a finding when it cannot. |
+| S-14 and S-20 | A shared item must not carry the private facts of the project it came from. | A shared item keeps derived values only, and passes the S-14 check of the project that publishes it. |
+| S-13 and S-20 | Sharing tends to call for a central service. | Shared items are plain files in public repositories, cited by id and version, like any other source. |
+| S-14 and S-21 | A firm's private project cannot publish its record. | A report to the standard names only requirement ids, incident kinds, and measured shares, not the project's content. |
 
 ## 1.5 Open questions
 
@@ -150,3 +174,5 @@ Status is draft for every row until the standard reaches its first release.
 | Q-05 | Is the standard written in English only, or kept in step with a Japanese version? | owner | S-12 |
 | Q-06 | When the operator is not the owner (staff, a contractor, a crew), how far can the owner delegate decisions within a run, and how is that delegation recorded? | owner | S-04, S-18 |
 | Q-07 | What token budget should the status sheet of S-15 have? | measurement on the trial | S-15 |
+| Q-11 | Where shared items live: one common repository, one per domain, or each project publishing its own. | owner | S-20 |
+| Q-12 | Who keeps the standard when it has users other than the owner, and how they decide on reports. | owner | S-21 |
