@@ -56,6 +56,7 @@ Success is first measured by how many projects cite the same shared item.
 | [skill/](skill/) | The Agent Skill an assistant follows: [skill/traceable-design/SKILL.md](skill/traceable-design/SKILL.md). |
 | [template/](template/) | The starting layout of a new project's record, with the tool, the skill, and CI. It is published as the template repository [traceable-design/template](https://github.com/traceable-design/template): press "Use this template" to start a project. |
 | [examples/](examples/) | Small records used as test fixtures and as examples. |
+| [AGENTS.md](AGENTS.md) | How an AI assistant continues work on this standard. |
 
 ## Passes
 
