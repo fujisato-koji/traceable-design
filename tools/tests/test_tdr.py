@@ -1,6 +1,7 @@
 """Tests for tools/tdr.py. Run: python tools/tests/test_tdr.py"""
 import io
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -266,6 +267,310 @@ class ExampleTests(Fixture):
         self.assertIn("E12", run("Tier: T3\n")[1])
         self.assertIn("E12", run("Tier: T3\nDecision: D-404\n")[1])
         self.assertEqual(run("Tier: T3\nDecision: D-001\n")[0], 0)
+
+
+MODELS = """kind: model
+schema: 1
+items:
+  - id: MD-01
+    title: Deflection of the shelf board
+    role: analysis
+    files:
+      - sim/beam.py
+    entry: sim.beam:run
+    method: Simple beam under a central load
+    basis:
+      - P1
+    scope: Static bending of a rectangular board
+    params:
+      - name: load
+        unit: N
+        min: 0
+        max: 1000
+      - name: span
+        unit: mm
+    results:
+      - name: deflection
+        unit: mm
+"""
+
+RUNS = """kind: model_run
+schema: 1
+items:
+  - id: MD-01.01
+    model: MD-01
+    date: 2026-10-29
+    by: assistant
+    version: "sha-000000000000"
+    stamp: "sha-000000000000"
+    command: python -m sim.beam
+    inputs:
+      - param: load
+        key: shelf.load_n
+      - param: span
+        key: shelf.span_mm
+    settings:
+      - name: step
+        v: 0.5
+        unit: mm
+    seed: 1
+    outputs:
+      - result: deflection
+        key: shelf.model_deflection_mm
+    tol: 0.000001
+"""
+
+VALUE = """  - key: shelf.model_deflection_mm
+    v: 1.5
+    unit: mm
+    status: calculated
+    basis:
+      - MD-01.01
+"""
+
+
+class ModelTests(Fixture):
+    def setUp(self):
+        super().setUp()
+        self.write("sim/beam.py", "def run(load, span):\n    return load * span\n")
+        self.write("record/models.yaml", MODELS)
+        self.write("record/model_runs/MD-01.yaml", RUNS)
+        with (self.root / "record" / "values.yaml").open("a", newline="\n") as f:
+            f.write(VALUE)
+        self.restamp()
+
+    def restamp(self):
+        """Write the version and stamp that the tool computes into the run file."""
+        rec = tdr.Record(self.root)
+        md = rec.index["MD-01"]
+        run = rec.index["MD-01.01"]
+        ver = tdr.model_version(rec, md)
+        st = tdr.run_stamp(rec, run, ver)
+        p = self.root / "record" / "model_runs" / "MD-01.yaml"
+        s = p.read_text(encoding="utf-8")
+        s = re.sub(r'version: "sha-[0-9a-f]{12}"', f'version: "{ver}"', s)
+        s = re.sub(r'stamp: "sha-[0-9a-f]{12}"', f'stamp: "{st}"', s)
+        p.write_text(s, encoding="utf-8", newline="\n")
+        self.refresh()
+
+    def refresh(self):
+        cli("tables", "--root", str(self.root))
+        cli("status", "--root", str(self.root))
+
+    def test_a_fresh_model_passes(self):
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_version_ignores_line_ends_and_is_quoted_hex(self):
+        rec = tdr.Record(self.root)
+        v1 = tdr.model_version(rec, rec.index["MD-01"])
+        self.assertRegex(v1, r"^sha-[0-9a-f]{12}$")
+        p = self.root / "sim" / "beam.py"
+        p.write_bytes(p.read_bytes().replace(b"\n", b"\r\n"))
+        self.assertEqual(tdr.model_version(tdr.Record(self.root), rec.index["MD-01"]), v1)
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_e23_code_edit(self):
+        with (self.root / "sim" / "beam.py").open("a", newline="\n") as f:
+            f.write("# changed\n")
+        code, out = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("E23", codes(out))
+        self.assertIn("current sha-", out)
+
+    def test_e23_input_change(self):
+        self.mutate("record/values.yaml", "v: 200", "v: 250")
+        self.assertIn("E23", codes(self.check()[1]))
+
+    def test_e23_setting_change(self):
+        self.mutate("record/model_runs/MD-01.yaml", "v: 0.5", "v: 0.25")
+        self.assertIn("E23", codes(self.check()[1]))
+
+    def test_e23_history_run_is_not_checked(self):
+        """A run that nothing cites is history and may be stale."""
+        self.mutate("record/values.yaml", "      - MD-01.01\n", "      - D-001\n")
+        self.mutate("record/values.yaml", "status: calculated\n    basis:\n      - D-001",
+                    "status: decided\n    basis:\n      - D-001")
+        with (self.root / "sim" / "beam.py").open("a", newline="\n") as f:
+            f.write("# changed\n")
+        self.refresh()
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_e23_used_model_changes_the_version(self):
+        self.write("sim/wind.py", "WIND = 1\n")
+        self.write("record/models.yaml", MODELS + """  - id: MD-02
+    title: Wind
+    role: analysis
+    files:
+      - sim/wind.py
+    entry: sim.wind:run
+    method: A constant wind
+    basis:
+      - P1
+    scope: Nothing real
+    params:
+      - name: u
+        unit: m/s
+    results:
+      - name: f
+        unit: N
+""")
+        self.mutate("record/models.yaml", "    files:\n      - sim/beam.py\n",
+                    "    files:\n      - sim/beam.py\n    uses:\n      - MD-02\n")
+        self.restamp()
+        self.assertEqual(self.check(), (0, "ok\n"))
+        with (self.root / "sim" / "wind.py").open("a", newline="\n") as f:
+            f.write("# changed\n")
+        self.assertIn("E23", codes(self.check()[1]))
+
+    def test_e23_written_file_tag(self):
+        self.mutate("record/model_runs/MD-01.yaml", "    tol: 0.000001\n",
+                    "    tol: 0.000001\n    writes:\n      - sim/out.js\n")
+        self.restamp()
+        self.write("sim/out.js", "// no tag here\n")
+        self.assertIn("E23", codes(self.check()[1]))
+        st = tdr.Record(self.root).index["MD-01.01"].d["stamp"]
+        self.write("sim/out.js", f"// tdr-run: MD-01.01 {st}\n")
+        self.refresh()
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_e03_missing_file_and_unknown_basis(self):
+        self.mutate("record/models.yaml", "- sim/beam.py", "- sim/none.py")
+        self.assertIn("E03", codes(self.check()[1]))
+        self.mutate("record/models.yaml", "- sim/none.py", "- sim/beam.py")
+        self.mutate("record/models.yaml", "      - P1\n", "      - P9\n")
+        self.assertIn("E03", codes(self.check()[1]))
+
+    def test_e22_forms(self):
+        cases = [
+            ("record/models.yaml", "role: analysis", "role: onboard"),
+            ("record/models.yaml", "- sim/beam.py", "- ../beam.py"),
+            ("record/models.yaml", "id: MD-01", "id: MD-1"),
+            ("record/model_runs/MD-01.yaml", "id: MD-01.01", "id: MD-02.01"),
+            ("record/model_runs/MD-01.yaml", "param: load", "param: nope"),
+            ("record/model_runs/MD-01.yaml", "result: deflection", "result: nope"),
+            ("record/model_runs/MD-01.yaml", "stamp: \"sha-", "stamp: \"abc-"),
+            ("record/model_runs/MD-01.yaml", "        key: shelf.load_n\n",
+             "        key: shelf.load_n\n        run: MD-01.01\n"),
+        ]
+        for rel, old, new in cases:
+            with self.subTest(new=new):
+                self.mutate(rel, old, new)
+                self.assertIn("E22", codes(self.check()[1]))
+                self.mutate(rel, new, old)
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_e22_uses_cycle(self):
+        self.mutate("record/models.yaml", "    files:\n      - sim/beam.py\n",
+                    "    files:\n      - sim/beam.py\n    uses:\n      - MD-01\n")
+        self.assertIn("E22", codes(self.check()[1]))
+
+    def test_e22_check_of_a_model_needs_its_version(self):
+        with (self.root / "record" / "checks.yaml").open("a", newline="\n") as f:
+            f.write("  - id: K-002\n    target:\n      - MD-01\n    tier: T2\n"
+                    "    method: refute\n    result: pass\n    by: checker\n    date: 2026-10-29\n")
+        self.assertIn("E22", codes(self.check()[1]))
+        with (self.root / "record" / "checks.yaml").open("a", newline="\n") as f:
+            f.write("    version: sha-0123456789ab\n")
+        self.assertEqual(self.check(), (0, "ok\n"))
+
+    def test_e26_value_not_in_outputs(self):
+        self.mutate("record/model_runs/MD-01.yaml", "key: shelf.model_deflection_mm",
+                    "key: shelf.load_n")
+        self.restamp()
+        self.assertIn("E26", codes(self.check()[1]))
+
+    def test_e26_output_not_calculated_from_the_run(self):
+        self.mutate("record/values.yaml", "status: calculated\n    basis:\n      - MD-01.01",
+                    "status: decided\n    basis:\n      - D-001")
+        self.mutate("record/model_runs/MD-01.yaml", "    outputs:", "    outputs:\n"
+                    "      - result: deflection\n        key: shelf.load_n")
+        self.write("record/values2.yaml", "kind: value\nschema: 1\nitems:\n"
+                   "  - key: shelf.calc2_mm\n    v: 1\n    unit: mm\n    status: calculated\n"
+                   "    basis:\n      - MD-01.01\n")
+        self.restamp()
+        self.assertIn("E26", codes(self.check()[1]))
+
+    def test_e05_measured_may_not_cite_a_design_run(self):
+        self.mutate("record/values.yaml", "status: calculated", "status: measured")
+        self.assertIn("E05", codes(self.check()[1]))
+
+    def test_e05_withdrawn_is_never_a_basis(self):
+        self.mutate("record/values.yaml", "key: board.width_mm\n    v: 200\n    unit: mm\n"
+                    "    status: decided", "key: board.width_mm\n    v: 200\n    unit: mm\n"
+                    "    status: withdrawn")
+        self.refresh()
+        self.assertEqual(self.check()[0], 0)
+        self.mutate("record/model_runs/MD-01.yaml", "key: shelf.load_n", "key: board.width_mm")
+        self.restamp()
+        self.assertIn("E05", codes(self.check()[1]))
+
+    def test_references_of_the_smaller_changes(self):
+        self.mutate("record/requirements.yaml", "    parts:\n      - board\n      - bracket",
+                    "    parts:\n      - board\n      - bracket\n    values:\n      - shelf.nope")
+        self.assertIn("E03", codes(self.check()[1]))
+        self.mutate("record/requirements.yaml", "shelf.nope", "shelf.load_n")
+        self.assertEqual(self.check()[0], 0)
+        self.mutate("record/parts.yaml", "id: board\n", "id: board\n    price: board.cost\n")
+        self.assertIn("E03", codes(self.check()[1]))
+
+    def test_supersedes_list_and_scalar(self):
+        self.mutate("record/decisions.yaml", "  - id: D-002\n", "  - id: D-002\n"
+                    "    supersedes: D-001\n")
+        self.assertEqual(self.check()[0], 0)
+        self.mutate("record/decisions.yaml", "supersedes: D-001", "supersedes:\n      - D-001\n"
+                    "      - D-099")
+        self.assertIn("E03", codes(self.check()[1]))
+
+    def test_section_ids_are_resolved_when_used(self):
+        base = "kind: value\nschema: 1\nitems:\n  - key: a.b\n    v: 1\n    status: calculated\n" \
+               "    basis:\n      - "
+        self.write("docs/plain.md", "# Plain\n\n## No ids here\n")
+        self.write("record/v3.yaml", base + "docs/plain.md#anything\n")
+        self.refresh()
+        self.assertEqual(self.check()[0], 0, "a file without {#id} headings is not checked")
+        self.write("record/v3.yaml", base + "docs/03-design.md#deflection\n")
+        self.assertEqual(self.check()[0], 0)
+        self.write("record/v3.yaml", base + "docs/03-design.md#other\n")
+        self.assertIn("E03", codes(self.check()[1]))
+
+    def test_open_after_and_read_query(self):
+        self.mutate("record/open.yaml", "    opened: 2026-10-21\n",
+                    "    opened: 2026-10-21\n    after:\n      - Q-404\n")
+        self.assertIn("E03", codes(self.check()[1]))
+        self.mutate("record/open.yaml", "Q-404", "Q-001")
+        self.assertEqual(self.check()[0], 0)
+        self.mutate("record/sources.yaml", "read: not_read", "read: query")
+        self.assertIn("E22", codes(self.check()[1]), "query needs the retrieved date")
+
+    def test_tables_regenerates(self):
+        self.mutate("record/values.yaml", "v: 18", "v: 19")
+        self.assertIn("E10", codes(self.check()[1]))
+        code, out = cli("tables", "--root", str(self.root))
+        self.assertEqual(code, 0)
+        cli("status", "--root", str(self.root))
+        self.assertEqual(self.check(), (0, "ok\n"))
+        self.assertEqual(cli("tables", "--root", str(self.root))[1].strip(), "0 file(s) changed")
+
+    def test_stamp_command(self):
+        code, out = cli("stamp", "MD-01.01", "--root", str(self.root))
+        run = tdr.Record(self.root).index["MD-01.01"].d
+        self.assertEqual(code, 0)
+        self.assertIn(f"version: {run['version']}", out)
+        self.assertIn(f"stamp: {run['stamp']}", out)
+        self.assertEqual(cli("stamp", "R-01", "--root", str(self.root))[0], 1)
+
+    def test_tier_accepts_a_comma_list_of_decisions(self):
+        m = Path(self._tmp.name) / "msg.txt"
+        m.write_text("Tier: T3\nDecision: D-001, D-002\n", encoding="utf-8")
+        self.assertEqual(cli("tier", "--message", str(m), "--root", str(self.root))[0], 0)
+        m.write_text("Tier: T3\nDecision: D-001, D-404\n", encoding="utf-8")
+        self.assertIn("E12", cli("tier", "--message", str(m), "--root", str(self.root))[1])
+
+
+class TemplateTests(unittest.TestCase):
+    def test_template_and_example_still_pass(self):
+        for root in (REPO / "template", EXAMPLE):
+            self.assertEqual(cli("check", "--root", str(root)), (0, "ok\n"))
 
 
 class EmptyRecordTests(unittest.TestCase):
