@@ -204,6 +204,7 @@ They go into the Agent Skill, and the owner checks them in review.
 | Q-09 | Whether the commands of 3.4 are part of the standard or only a reference implementation. This chapter assumes the behaviour is required and the names are not. | owner | 3.4 |
 | Q-10 | How the worked example moves its requirements, sources, decisions, and open items into `record/`. | pass 6 | 3.1 |
 | Q-13 | Whether the token estimate of N-15 is close enough, checked against a real tokenizer on the trial. | measurement on the trial | N-15 |
+| Q-14 | How a project learns that the tool, the skill, or the template has a new version, and how it updates its copies: S-22 applied to the standard's own tools. Until then, copies are updated by hand. | owner | S-22, N-25, N-26 |
 
 ## 3.11 Reflect to
 

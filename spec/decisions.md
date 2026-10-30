@@ -16,3 +16,5 @@ All were made by the owner.
 | D-009 | 2026-10-25 | The first cluster is individual makers and makers near the owner. | README |
 | D-010 | 2026-10-25 | Keep the repositories in the traceable-design organization. | README |
 | D-011 | 2026-10-25 | Data files are YAML restricted to a subset that a standard-library reader accepts. | Q-08, 3.2 |
+| D-012 | 2026-10-25 | Do not redo the worked example to measure tokens; measure them on a new project instead. | S-15, pass 5 |
+| D-013 | 2026-10-25 | Publish `template/` as the template repository traceable-design/template. | README |

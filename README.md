@@ -54,8 +54,9 @@ Success is first measured by how many projects cite the same shared item.
 | [notes/](notes/) | Raw material: what was done in practice, research, comparisons. |
 | [tools/](tools/) | [tdr.py](tools/tdr.py), the reference tool (checks, status sheet, lookup, briefs, change tiers, MCP server), and [usage_report.py](tools/usage_report.py), which shows where an assistant session spent its tokens. Python standard library only. |
 | [skill/](skill/) | The Agent Skill an assistant follows: [skill/traceable-design/SKILL.md](skill/traceable-design/SKILL.md). |
-| [template/](template/) | The starting layout of a new project's record, with the tool, the skill, and CI. |
+| [template/](template/) | The starting layout of a new project's record, with the tool, the skill, and CI. It is published as the template repository [traceable-design/template](https://github.com/traceable-design/template): press "Use this template" to start a project. |
 | [examples/](examples/) | Small records used as test fixtures and as examples. |
+| [AGENTS.md](AGENTS.md) | How an AI assistant continues work on this standard. |
 
 ## Passes
 
@@ -65,7 +66,7 @@ The standard is developed the way it asks a design to be developed.
 2. Form: the actors, the files of a record, the phases of life and the order of work in each, the tiers of change: [spec/02-form.md](spec/02-form.md) (draft).
 3. Rules and checks: each rule serves a requirement and says who or what checks it: [spec/03-rules.md](spec/03-rules.md) (draft).
 4. Template and checks taken out of the worked example, so a new project can start from them: [tools/tdr.py](tools/tdr.py), [skill/](skill/), [template/](template/) (draft).
-5. Trial on a small example and on a new project, judged against the design points of chapter 1.
+5. Trial on a new project that the owner wants to make, judged against the design points of chapter 1, with its tokens measured by [usage_report.py](tools/usage_report.py).
 6. The worked example moved onto the template.
 7. The first full loop: the worked example built and fired, and its findings returned to its own record and to this standard.
 
