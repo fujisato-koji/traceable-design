@@ -196,6 +196,8 @@ They go into the Agent Skill, and the owner checks them in review.
 - E15 checks only that a citation has a version in the right form. Whether a published version changed, and whether a version lists its checks, need the item's home and are left to a later service.
 - E10 compares `STATUS.md` and generated tables. It does not find a value restated in prose.
 - N-20's "someone other than the author" is not compared with the change's author.
+- E11 ignores the result and the target of the check it is given. The `design_build` gate does not check that a parts list exists or is priced, or that any hazard is listed. Values written inside the text of a design point are not references. Nothing compares the constants a model uses with the record (E24 below is proposed).
+- E03 resolves the `#section` of a docs reference only against `{#id}` headings (N-48, proposed), and only in a file that has at least one such heading.
 
 ## 3.10 Open items
 
@@ -204,6 +206,9 @@ They go into the Agent Skill, and the owner checks them in review.
 | Q-09 | Whether the commands of 3.4 are part of the standard or only a reference implementation. This chapter assumes the behaviour is required and the names are not. | owner | 3.4 |
 | Q-10 | How the worked example moves its requirements, sources, decisions, and open items into `record/`. | pass 6 | 3.1 |
 | Q-13 | Whether the token estimate of N-15 is close enough, checked against a real tokenizer on the trial. | measurement on the trial | N-15 |
+| Q-15 (proposed, D-014) | Whether a T1 edit that keeps a model "the same" may leave the model checked at an older version between gates (reruns within tolerance, a re-check at the gate), or whether every code edit needs a re-check. Recommended: allow it between gates. | owner | F-5, N-44 |
+| Q-16 (proposed, D-014) | Whether a slow run (for example a differential evolution search) may be marked `rerun: manual`, proved only at the next version change and at gates, and how long unused superseded runs are kept. | owner | N-43 |
+| Q-17 (proposed, D-014) | Depends on Q-11. Where a project that cites a shared model keeps the home's index and the vendored files, and how often the fetch runs. | owner | N-51 |
 | Q-14 | How a project learns that the tool, the skill, or the template has a new version, and how it updates its copies: S-22 applied to the standard's own tools. Until then, copies are updated by hand. | owner | S-22, N-25, N-26 |
 
 ## 3.11 Reflect to
@@ -212,3 +217,82 @@ They go into the Agent Skill, and the owner checks them in review.
 |-------|------|
 | Chapter 2, 2.3 | Source marks take the form P12 (3.1). |
 | Pass 4 | Done in [tools/tdr.py](../tools/tdr.py) (the YAML subset reader, `check`, `status`, `get`, `refs`, `brief`, `tier`, and an MCP server with the same calls), [skill/traceable-design/SKILL.md](../skill/traceable-design/SKILL.md) (3.8 and the order of work), and [template/](../template/) (the layout of 3.1). |
+
+## 3.12 Proposed: models and design runs (D-014)
+
+Everything in this section is proposed by [D-014](decisions.md).
+It is not in force until the owner accepts D-014.
+Every rule carries "(proposed)" in its first cell.
+The evidence is the audit of the drone trial (pass 5): its record held computed values with no way to say which program version made them.
+[Chapter 2, 2.11](02-form.md) holds the matching amendments to F-2, F-5, and the design to build gate.
+
+### Layout (proposed)
+
+```text
+record/
+  models.yaml           MD-nn
+  model_runs/MD-nn.yaml design runs MD-nn.nn, one file per model
+```
+
+### Kinds added (proposed)
+
+| Kind | Fields | Allowed values |
+|------|--------|----------------|
+| Model | **id**, **title**, **role**, **files**, **entry**, **method**, **basis**, **scope**, **params**, **results**, uses, part, from, withdrawn | role: analysis, onboard. files: paths inside the project, in hashing order. params: name, unit, optional min and max. results: name, unit. uses: ids of other models. part: a part id, required for onboard. method: one line, no numbers. |
+| Design run | **id** (MD-nn.nn), **model**, **date**, **by**, **version**, **stamp**, **command**, inputs, settings, seed, outputs, tol, writes, note | version, stamp: sha-<12 hex>. inputs: param, and one of key (a value key) or run (a run id). settings: name, v, unit. outputs: result, key (never the number). writes: files the run writes. |
+
+### Smaller changes to existing kinds (proposed)
+
+| Change | Text |
+|--------|------|
+| Requirement `values` | Optional list of the value keys its design point is judged on. E03 resolves them. |
+| Part `price` | Optional value key of the part's price. E03 resolves it. |
+| Open item `after` | Optional list of open items it waits on. E03 resolves them. |
+| Value status `withdrawn` | A value that is dead but still targeted by a check or a superseded run. Kept with its reason. |
+| Source read level `query` | A dataset service where only some points were queried. |
+| Check `version`, `supersedes` | `version` is the model version the check saw. `supersedes` is a check, or a list of checks, that this one replaces. |
+| Decision `supersedes` | A single id or a list of ids. |
+| Decision trailer | `Decision:` accepts a comma list, as `Checks:` does (N-19, N-21). The root commit of a template repository is exempt from N-19. |
+| Section ids | A section id is a heading ending in `{#id}` (N-48). |
+
+### Rules (proposed)
+
+| Rule | Text | Serves | Checked by |
+|------|------|--------|------------|
+| N-38 (proposed) | A program whose output becomes a value, or which will run in the thing, is a model (MD-nn) in `record/models.yaml`. Its version is `sha-` and the first 12 hex digits of the SHA-256 of, for each listed file in order, the path, a NUL byte, the bytes with CRLF turned into LF, and a NUL byte, then, for each model it uses in order, the text `uses`, a NUL byte, that model's version, and a NUL byte. The tool computes the version and it is never stored on the model. | S-01, S-07, S-13, S-20 | E03, E22 |
+| N-39 (proposed) | A value a model produced has status calculated and cites its run (MD-nn.nn), and may add the docs section of its reasoning. A run lists output keys, never numbers, so each number stays in one place. Superseded runs are kept as history, and prose cites the old run id instead of restating its numbers. | S-01, S-07 | E05, E26 |
+| N-40 (proposed) | A run states its date, who, model version, stamp, exact command, inputs (value keys mapped to params, or ids of runs whose results it reads), settings (the non design numbers, such as duration and time step), seed, tolerance, and the files it writes. Nothing outside these changes the result: no unlisted file, clock, or unpinned seed. The stamp is `sha-` and 12 hex digits of the SHA-256 of the compact JSON of the version, the inputs (param, key, number, unit; for a run input, that run's stamp), the settings, the seed, and the command. A number written 18 or 18.0 reads the same. | S-01 | E03, E22, E24 |
+| N-41 (proposed) | A run that a value cites, or that a check not superseded cites, is fresh: its version and stamp recompute. A change that edits a model's files, a used model, or an input reruns the runs it affects and updates their stamps in the same change. This carries F-6 "values in documents against models" into this chapter. | S-07, S-17 | E23 |
+| N-42 (proposed) | A model reads keyed values from the record, through a reader built on `load_yaml`, never from literal copies. Every constant that shapes a result is a value key or a run setting. | S-07 | E24, project tests, owner review |
+| N-43 (proposed) | A file a cited run writes is listed in exactly one cited run's `writes`. Its first 256 bytes carry `tdr-run: <run id> <stamp>`. It holds no date, runtime, or machine name, is committed or ignored by git, and is never a basis. The project's CI reruns each run and compares the values citing it within tolerance (slow runs: Q-16). | S-07 | E23, project CI |
+| N-44 (proposed) | A check of a model or a run names the model version it saw (`version`). A defect a check returns is a finding that affects the model, closed by a re-check at the repaired version. A later passing check may supersede an earlier partial or failing check of the same target, which the status sheet then hides. | S-06, S-09 | E22, E11 |
+| N-20 amended (proposed) | A T2 change cites, for each model or calculation it adds or changes, a check with result pass and method refute, independent_model, or hand_calc, made by someone other than the author and, when it targets a model, at that model's current version. | S-06 | E11 |
+| N-45 (proposed) | Each part has a price: a field `price` naming a value key (sourced, or assumed with an open item at design time). At the design to build gate every part's price is sourced or decided. | S-03 | E03, E20 |
+| N-46 (proposed) | Hazards to people and property are listed from step 1.1 and revisited for each candidate form. An empty hazard list passes a gate only with an owner decision saying none apply. | S-08, S-10 | E20 |
+| N-47 (proposed) | A number in a design point is cited by value key, and a requirement lists in `values` the keys its design point is judged on. E03 resolves them, E06 follows them, and `tdr brief` and the gate use them. | S-01, S-02, S-03 | E03, E06, E20 |
+| N-48 (proposed) | A section id is a heading that ends in `{#id}` (lowercase letters, digits, hyphens). E03 resolves the `#fragment` of a docs reference against the ids of that file. A file with no `{#id}` heading is not checked, so records written before this rule stay valid. GitHub does not render `{#id}`; the standard accepts that. | S-07 | E03 |
+| N-49 (proposed) | A value may have status withdrawn, with its reason in the docs, and is kept while a check or a superseded run still targets it. Nothing current cites a withdrawn value as a basis, in a requirement's `values`, or as the input of a cited run. | S-07 | E05 |
+| N-50 (proposed) | A model of role onboard names its part. Its version is listed in the as built baseline, and any change after that is T3. | S-16, S-04 | E12, E22 |
+| N-51 (proposed) | A shared model is published as a card `shared/MD-nn@sha-....yaml`, generated and immutable except for withdrawal and appended checks. The card carries the files with hashes, entry, params and results with domain, scope, the constants with value, status, and the basis resolved to source title and read level, and its checks. Params carry no private defaults, and the card passes the private name check. A project cites it as `owner/repo#MD-nn@sha-...`, vendors the files, and E15 verifies the hash offline. The home's index is fetched outside the tool, and a newer or withdrawn version becomes a notice. | S-20, S-22, S-23 | E13, E15, E16 |
+| N-52 (proposed) | A project records each gap it finds in the standard as an open item (2.11, F-8). | S-21 | owner review |
+| N-07 amended (proposed) | Allowed units are SI and the units accepted for use with SI (h, d, deg, L), currency codes (JPY), count, and B. Other units are converted (for example Wh/kg to J/kg) or named as an exception in the decision. | S-01 | E22 |
+
+### Check codes (proposed)
+
+| Code | Refuses | Rules |
+|------|---------|-------|
+| E05 extended (proposed) | calculated may cite a run (MD-nn.nn). measured never cites a design run. assumed cites an open item that lists the key in its `affects`. A withdrawn value is never a basis. | N-08, N-39, N-49 |
+| E11 extended (proposed) | A T2 change whose cited check does not have result pass, or does not carry the current version of a model it targets. | N-20, N-44 |
+| E20 extended (proposed) | At design_build: no parts, a part without a sourced or decided price, an empty hazard list without an owner decision, or a design point key that rests on a stale, unchecked, out of domain, or withdrawn run. | N-45, N-46, N-47 |
+| E22 extended (proposed) | Id forms MD-nn and MD-nn.nn. version and stamp not of the form `sha-` and 12 hex digits (written in quotes). check.version missing when a target names a model. role not analysis or onboard, or onboard without a part. A cycle in `uses`. A run input that is not a param, or an output that is not a result, of its model. | N-06, N-38, N-40, N-44, N-50 |
+| E23 (proposed) | A cited run is stale: its recorded version or stamp does not recompute, or a used model changed. Or a file it writes lacks its tag. The message prints the current version and stamp. | N-41, N-43 |
+| E24 (proposed) | A hidden input: a value key named in the files of a model, or of a model it uses, that the run does not list among its inputs. | N-40, N-42 |
+| E25 (proposed) | A run input outside the min or max of its param, unless a passing check targets that run at its stamp. | N-40 |
+| E26 (proposed) | A run that some value cites lists an output key that is not a calculated value citing that run, or a value cites a run that does not list its key. Runs that no value cites are history and are not compared. | N-39 |
+| E27 (proposed) | A generated docs table or `STATUS.md` is stale (moved out of E10). `tdr tables` regenerates the tables. | N-01, N-02 |
+
+### What the reference tool implements of this section
+
+The tool implements the new kinds `model` and `model_run` (loaded when the files exist), the smaller schema changes of the table above, `{#id}` resolution in E03 (N-48), E05 for runs and withdrawn values, E22 for the new kinds and fields, E23, E26, the comma list in the `Decision` trailer, and the commands `tdr stamp <MD id>` (prints the version and stamp to write) and `tdr tables` (regenerates the generated tables).
+Every new field is optional and the schema stays 1, so records without models are unchanged.
+It does not yet implement E11 extended, E20 extended, the `assumed` rule of E05 extended, E24, E25, E27 (stale tables are still reported as E10), `tdr run`, `tdr publish`, the model lines of `get`, `brief`, and `status`, the allowed unit list, the baseline `models` list of N-50, or the sharing card of N-51.

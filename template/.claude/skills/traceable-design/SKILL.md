@@ -34,6 +34,12 @@ Begin 1.1 by asking the questions that can rule a form out, before comparing any
 
 Record each answer as a decision (`record/decisions.yaml`) or an open item (`record/open.yaml`).
 In 1.2, check availability and rough cost for each candidate form before choosing.
+
+Proposed additions (D-014, not yet in force; the standard's owner has not decided them):
+
+- In 1.1, list the hazards to people and property (`record/hazards.yaml`), and revisit them for each candidate form in 1.2.
+- In 1.2 and 1.3, record parts (`record/parts.yaml`) and the interfaces between them (`record/interfaces.yaml`).
+- Record a program as a model (`record/models.yaml`, id MD-nn) before any value cites its output.
 When a later step finds a problem (a part cannot be had, the cost runs over), write the reason and the step it goes back to before changing that step.
 
 Gates: design to build, build to operate, each run, each change, removal.
@@ -46,6 +52,7 @@ End the conversation at each gate, or when your context passes about 200,000 tok
 - Write a value with its status and basis the moment you first use it. Status is one of decided (cites a decision), sourced (a source), calculated (a check or a docs section), measured (a run), assumed (an open item that says what would settle it).
 - Every requirement has a design point (pass or fail) and a verification method (inspection, analysis, demonstration, test). An expected value is written only beside its design point.
 - Sources carry a class (P primary, S secondary, M sales page, F forum) and how far you read them (full, partial, abstract, excerpt, archived, not_read). Never report a source as read when you saw only a summary. A forum value never stands alone as a design point.
+- Proposed (D-014): a value a model produced has status calculated and cites its design run (`record/model_runs/MD-nn.yaml`, id MD-nn.nn), never restating the run's numbers. After editing a model's files or an input, rerun it and update the run's `version` and `stamp` (`python tools/tdr.py stamp MD-nn.nn`) in the same change. A model reads keyed values from the record, not literal copies.
 - YAML is block style only: no `{}` or `[]`, no anchors, no tags. Comments stand on their own lines. Quote any string that contains ` #` or `: `. An empty list is the key with no value.
 - Private facts (the place, addresses, local station names) never enter the record. Write the derived value with the basis `private:<id>`, and keep the fact in the owner's private store.
 

@@ -2,9 +2,10 @@
 """tdr: reference tool for traceable design records.
 
 Python 3.10+, standard library only, no network.
-Usage: python tools/tdr.py <check|status|get|refs|brief|tier|mcp> [--root DIR]
+Usage: python tools/tdr.py <check|status|get|refs|brief|tier|tables|stamp|mcp> [--root DIR]
 """
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -228,48 +229,57 @@ def load_yaml(text):
 
 GATES = ("design_build", "build_operate", "remove")
 KINDFILES = ("requirement", "value", "source", "decision", "open", "hazard", "part",
-             "interface", "check", "citation", "baseline", "run", "procedure")
+             "interface", "check", "citation", "baseline", "run", "procedure", "model",
+             "model_run")
 TIERS = ("T0", "T1", "T2", "T3")
 D = r"\d{4}-\d{2}-\d{2}"
 SRC_RX = re.compile(r"[PSMF]\d+[a-z]?")
 GLOBAL_RX = re.compile(r"[\w.-]+/[\w.-]+#[\w.-]+@[\w.-]+")
 DOCS_RX = re.compile(r"docs/[^#\s]+\.md(#[\w.-]+)?")
+SECTION_RX = re.compile(r"^#{1,6}[ \t].*\{#([a-z0-9][a-z0-9-]*)\}[ \t]*$", re.M)
+SHA = r"sha-[0-9a-f]{12}"
+RUN_RX = re.compile(r"MD-\d{2}\.\d{2}")
+MODEL_RX = re.compile(r"MD-\d{2}")
 PHASES = ("design", "build", "operate", "change", "remove")
 
 SPECS = {
     "requirement": dict(req="id text origin design_point verify basis status",
-                        opt="expected parent parts", lists="basis parts",
+                        opt="expected parent parts values", lists="basis parts values",
                         enum=dict(origin=("owner", "derived"),
                                   verify=("inspection", "analysis", "demonstration", "test"),
                                   status=("awaiting", "confirmed", "withdrawn")),
                         rx=dict(id=r"R-\d+[a-z]?")),
     "value": dict(req="key v status basis", opt="unit", lists="basis",
-                  enum=dict(status=("decided", "sourced", "calculated", "measured", "assumed")),
+                  enum=dict(status=("decided", "sourced", "calculated", "measured", "assumed",
+                                    "withdrawn")),
                   rx=dict(key=r"[a-z0-9_]+(\.[a-z0-9_]+)+")),
     "source": dict(req="id class title license read", opt="url retrieved note",
                    enum=dict(**{"class": tuple("PSMF")},
-                             read=("full", "partial", "abstract", "excerpt", "archived", "not_read")),
+                             read=("full", "partial", "abstract", "excerpt", "archived", "query",
+                                   "not_read")),
                    rx=dict(id=SRC_RX.pattern), dates="retrieved"),
     "decision": dict(req="id date by what touches", opt="options supersedes",
-                     lists="options touches", enum=dict(by=("owner", "operator")),
+                     lists="options touches", any="supersedes", enum=dict(by=("owner", "operator")),
                      rx=dict(id=r"D-\d{3}"), dates="date"),
     "open": dict(req="id kind text waits_for opened",
-                 opt="affects raised_by phase run blocks closed_by closed", lists="affects",
+                 opt="affects raised_by phase run blocks closed_by closed after",
+                 lists="affects after",
                  enum=dict(kind=("question", "finding", "notice"), phase=PHASES),
                  rx=dict(id=r"Q-\d{3}"), dates="opened closed"),
     "hazard": dict(req="id text phases at_risk controls", lists="phases controls",
                    enum=dict(phases=PHASES), rx=dict(id=r"H-\d{2}")),
-    "part": dict(req="id name", opt="parent", rx=dict(id=r"[a-z][a-z0-9_]*")),
+    "part": dict(req="id name", opt="parent price", rx=dict(id=r"[a-z][a-z0-9_]*")),
     "interface": dict(req="id between carries", opt="values", lists="between values",
                       enum=dict(carries=("load", "heat", "gas", "liquid", "power", "signal",
                                          "smoke", "other")),
                       rx=dict(id=r"I-\d{2}")),
-    "check": dict(req="id target tier method result by date", opt="detail", any="target",
+    "check": dict(req="id target tier method result by date",
+                  opt="detail version supersedes", any="target supersedes",
                   enum=dict(tier=TIERS, result=("pass", "fail", "partial"),
                             method=("script", "refute", "independent_model", "hand_calc",
                                     "inspection", "analysis", "demonstration", "test",
                                     "measurement")),
-                  rx=dict(id=r"K-\d{3}"), dates="date"),
+                  rx=dict(id=r"K-\d{3}", version=SHA), dates="date"),
     "baseline": dict(req="id kind date decision", opt="deviations", lists="deviations",
                      enum=dict(kind=("as_designed", "as_built", "as_operated")),
                      rx=dict(id=r"B-\d{2}"), dates="date"),
@@ -277,6 +287,13 @@ SPECS = {
                 lists="measured deviations findings", rx=dict(id=r"RN-\d{3}"), dates="date"),
     "procedure": dict(req="id title steps", lists="steps", rx=dict(id=r"OP-\d{2}")),
     "citation": dict(req="ref used_for", opt="responses", lists="used_for responses"),
+    "model": dict(req="id title role files entry method basis scope params results",
+                  opt="uses part from withdrawn", lists="files basis uses params results",
+                  enum=dict(role=("analysis", "onboard")), rx=dict(id=MODEL_RX.pattern)),
+    "model_run": dict(req="id model date by version stamp command",
+                      opt="inputs settings seed outputs tol writes note",
+                      lists="inputs settings outputs writes",
+                      rx=dict(id=RUN_RX.pattern, version=SHA, stamp=SHA), dates="date"),
 }
 NESTED = {
     ("baseline", "deviations"): dict(req="key design built decision", any="design built"),
@@ -285,6 +302,11 @@ NESTED = {
                                  lists="values controls limits", rx=dict(id=r"OP-\d{2}\.\d{2}")),
     ("citation", "responses"): dict(req="notice answer", opt="by_id",
                                     enum=dict(answer=("adopted", "not_applicable", "open"))),
+    ("model", "params"): dict(req="name unit", opt="min max"),
+    ("model", "results"): dict(req="name unit"),
+    ("model_run", "inputs"): dict(req="param", opt="key run"),
+    ("model_run", "settings"): dict(req="name v", opt="unit"),
+    ("model_run", "outputs"): dict(req="result key"),
 }
 OVR = {("requirement", "design_point"): "E07", ("requirement", "verify"): "E08",
        ("value", "status"): "E04", ("value", "basis"): "E04", ("hazard", "controls"): "E09",
@@ -302,6 +324,10 @@ REF_FIELDS = [
     ("run", "measured", "key"), ("procedure", "steps", "values"),
     ("procedure", "steps", "limits"), ("procedure", "steps", "controls"),
     ("citation", "responses", "notice"), ("citation", "responses", "by_id"),
+    ("requirement", "values"), ("part", "price"), ("open", "after"), ("check", "supersedes"),
+    ("model", "basis"), ("model", "uses"), ("model", "part"), ("model_run", "model"),
+    ("model_run", "inputs", "key"), ("model_run", "inputs", "run"),
+    ("model_run", "outputs", "key"),
 ]
 REF_CODE = {("baseline", "deviations", "decision"): "E19",
             ("procedure", "steps", "values"): "E17", ("procedure", "steps", "limits"): "E17"}
@@ -342,6 +368,7 @@ class Record:
         self.problems = []
         self.items = {k: [] for k in KINDFILES}
         self.index = {}
+        self.section_cache = {}
         base = self.root / "record"
         files = sorted(base.rglob("*.yaml")) if base.is_dir() else []
         for f in files:
@@ -451,6 +478,32 @@ class Record:
                 self.add("E18", path, d.line, f"finding {d.get('id')}: phase operate needs a run")
         elif kind == "open" and blank(d.get("affects")) and d.get("kind") != "finding":
             self.add("E22", path, d.line, "open: missing affects")
+        elif kind == "model":
+            if d.get("role") == "onboard" and blank(d.get("part")):
+                self.add("E22", path, d.line, f"model {d.get('id')}: role onboard needs a part")
+            for f in aslist(d.get("files")):
+                if not self.safe_path(f):
+                    self.add("E22", path, d.at("files"), f"model {d.get('id')}: file '{f}' "
+                             "must be a relative path inside the project")
+        elif kind == "model_run":
+            if str(d.get("model")) != str(d.get("id", ""))[:5]:
+                self.add("E22", path, d.at("model"), f"model_run {d.get('id')}: "
+                         "model does not match the id")
+            for s in aslist(d.get("inputs")):
+                if isinstance(s, Map) and blank(s.get("key")) == blank(s.get("run")):
+                    self.add("E22", path, s.line, f"model_run {d.get('id')}: "
+                             "an input needs exactly one of key and run")
+        elif kind == "check" and any(MODEL_RX.match(str(t)) for t in aslist(d.get("target"))) \
+                and blank(d.get("version")):
+            self.add("E22", path, d.line, f"check {d.get('id')}: a check of a model "
+                     "needs the version it saw")
+
+    def safe_path(self, f):
+        """True for a relative file path that stays inside the project."""
+        f = str(f)
+        if not f or f.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", f):
+            return False
+        return ".." not in f.replace("\\", "/").split("/")
 
     def all_items(self):
         return [it for k in KINDFILES for it in self.items[k]]
@@ -464,8 +517,25 @@ class Record:
         if ref in self.index or ref.startswith("private:") or GLOBAL_RX.fullmatch(ref):
             return True
         if DOCS_RX.fullmatch(ref):
-            return (self.root / ref.split("#")[0]).is_file()
+            path, _, frag = ref.partition("#")
+            f = self.root / path
+            if not f.is_file():
+                return False
+            if frag:
+                ids = self.sections(f)
+                return not ids or frag in ids
+            return True
         return False
+
+    def sections(self, f):
+        """The {#id} section ids of a docs file; none means the file does not use them yet."""
+        if f not in self.section_cache:
+            try:
+                text = f.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                text = ""
+            self.section_cache[f] = set(SECTION_RX.findall(text))
+        return self.section_cache[f]
 
     def refs(self):
         """Yield (item, field, ref, line, code) for every reference in the record."""
@@ -482,6 +552,155 @@ class Record:
                     name = ".".join(spec[1:])
                     for r in aslist(v):
                         yield it, name, str(r), line, REF_CODE.get(spec, "E03")
+
+
+# ---------------------------------------------------------------- models and runs
+
+
+def model_version(rec, md, seen=()):
+    """sha-<12 hex> of a model's files and the versions of the models it uses.
+
+    Each file adds its path, NUL, its bytes with CRLF turned into LF, and NUL, in the listed
+    order. Each used model then adds 'uses', NUL, its version, and NUL. None when a file is
+    missing or unreadable, or the models use each other in a cycle.
+    """
+    if md.id in seen:
+        return None
+    h = hashlib.sha256()
+    for f in aslist(md.d.get("files")):
+        if not rec.safe_path(f):
+            return None
+        try:
+            data = (rec.root / str(f)).read_bytes()
+        except OSError:
+            return None
+        h.update(str(f).encode("utf-8") + b"\0" + data.replace(b"\r\n", b"\n") + b"\0")
+    for u in aslist(md.d.get("uses")):
+        used = rec.index.get(str(u))
+        v = model_version(rec, used, seen + (md.id,)) if used and used.kind == "model" else None
+        if v is None:
+            return None
+        h.update(b"uses\0" + v.encode("ascii") + b"\0")
+    return "sha-" + h.hexdigest()[:12]
+
+
+def canon(v):
+    """A number written as 18 or 18.0 reads the same in a stamp."""
+    return int(v) if isinstance(v, float) and v.is_integer() else v
+
+
+def run_stamp(rec, run, version):
+    """sha-<12 hex> of the version, the inputs (param, key, v, unit), the settings, the seed,
+    and the command, as compact JSON. None when an input does not resolve."""
+    ins = []
+    for s in aslist(run.d.get("inputs")):
+        if not isinstance(s, Map):
+            return None
+        if not blank(s.get("run")):
+            src = rec.index.get(str(s.get("run")))
+            if not src or src.kind != "model_run":
+                return None
+            ins.append([s.get("param"), "run", str(s["run"]), src.d.get("stamp")])
+        else:
+            val = rec.index.get(str(s.get("key")))
+            if not val or val.kind != "value":
+                return None
+            ins.append([s.get("param"), "key", str(s["key"]), canon(val.d.get("v")),
+                        val.d.get("unit")])
+    sets = [[s.get("name"), canon(s.get("v")), s.get("unit")]
+            for s in aslist(run.d.get("settings")) if isinstance(s, Map)]
+    blob = json.dumps([version, ins, sets, run.d.get("seed"), run.d.get("command")],
+                      ensure_ascii=False, separators=(",", ":"))
+    return "sha-" + hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+
+
+def cited_runs(rec):
+    """Runs that a value or a check still in force cites; the others are history."""
+    gone = {str(x) for c in rec.items["check"] for x in aslist(c.d.get("supersedes"))}
+    refs = [str(b) for v in rec.items["value"] for b in aslist(v.d.get("basis"))]
+    refs += [str(t) for c in rec.items["check"] if c.id not in gone
+             for t in aslist(c.d.get("target"))]
+    return [r for r in rec.items["model_run"] if r.id in refs]
+
+
+def check_models(rec):
+    """E22 (cross references), E23 (stale runs), E26 (outputs and values), E05 (withdrawn)."""
+    out, idx = [], rec.index
+    add = lambda c, it, f, m: out.append((c, it.path, it.d.at(f) if f else it.d.line, m))
+    for md in rec.items["model"]:
+        for f in aslist(md.d.get("files")):
+            if rec.safe_path(f) and not (rec.root / str(f)).is_file():
+                add("E03", md, "files", f"{md.id}: file '{f}' does not exist")
+        if model_version(rec, md) is None and all(
+                rec.safe_path(f) and (rec.root / str(f)).is_file() for f in aslist(md.d.get("files"))):
+            add("E22", md, "uses", f"{md.id}: uses has a cycle or a model that does not exist")
+    for r in rec.items["model_run"]:
+        md = idx.get(str(r.d.get("model")))
+        if md is None or md.kind != "model":
+            continue
+        params = {str(x.get("name")) for x in aslist(md.d.get("params")) if isinstance(x, Map)}
+        results = {str(x.get("name")) for x in aslist(md.d.get("results")) if isinstance(x, Map)}
+        for s in aslist(r.d.get("inputs")):
+            if isinstance(s, Map) and str(s.get("param")) not in params:
+                add("E22", r, "inputs", f"{r.id}: input '{s.get('param')}' is not a param of {md.id}")
+        for s in aslist(r.d.get("outputs")):
+            if isinstance(s, Map) and str(s.get("result")) not in results:
+                add("E22", r, "outputs", f"{r.id}: output '{s.get('result')}' is not a result of {md.id}")
+    cited = cited_runs(rec)
+    written = {}
+    for r in cited:
+        md = idx.get(str(r.d.get("model")))
+        cur = model_version(rec, md) if md is not None and md.kind == "model" else None
+        if cur is None:
+            continue
+        stamp = run_stamp(rec, r, cur)
+        if str(r.d.get("version")) != cur:
+            add("E23", r, "version", f"{r.id}: stale, recorded version {r.d.get('version')}, "
+                f"current {cur}")
+        elif stamp is not None and str(r.d.get("stamp")) != stamp:
+            add("E23", r, "stamp", f"{r.id}: stale, recorded stamp {r.d.get('stamp')}, "
+                f"current {stamp}")
+        for w in aslist(r.d.get("writes")):
+            if w in written:
+                add("E02", r, "writes", f"{r.id}: file '{w}' is also written by {written[w]}")
+            written[w] = r.id
+            tag = f"tdr-run: {r.id} {r.d.get('stamp')}"
+            f = rec.root / str(w)
+            head = f.read_bytes()[:256].decode("utf-8", "replace") if rec.safe_path(w) and \
+                f.is_file() else None
+            if head is None or tag not in head:
+                add("E23", r, "writes", f"{r.id}: file '{w}' is missing or lacks the tag '{tag}'")
+    # E26: the outputs of a run that a value cites, and the values that cite a run
+    by_run = {}
+    for v in rec.items["value"]:
+        for b in aslist(v.d.get("basis")):
+            if str(b) in idx and idx[str(b)].kind == "model_run":
+                by_run.setdefault(str(b), []).append(v)
+    for r in rec.items["model_run"]:
+        keys = [str(s.get("key")) for s in aslist(r.d.get("outputs")) if isinstance(s, Map)]
+        for v in by_run.get(r.id, []):
+            if v.id not in keys:
+                add("E26", v, "basis", f"{v.id}: cites {r.id}, which does not list it as an output")
+        if r.id in by_run:
+            for k in keys:
+                val = idx.get(k)
+                if val is not None and val.kind == "value" and not (
+                        val.d.get("status") == "calculated"
+                        and r.id in map(str, aslist(val.d.get("basis")))):
+                    add("E26", r, "outputs", f"{r.id}: output {k} is not a calculated value citing it")
+    # E05: nothing current rests on a withdrawn value
+    gone = {v.id for v in rec.items["value"] if v.d.get("status") == "withdrawn"}
+    users = [(v, "basis") for v in rec.items["value"] if v.d.get("status") != "withdrawn"]
+    users += [(r, "values") for r in rec.items["requirement"]]
+    for it, f in users:
+        for ref in aslist(it.d.get(f)):
+            if str(ref) in gone:
+                add("E05", it, f, f"{it.id}: rests on withdrawn value {ref}")
+    for r in cited:
+        for s in aslist(r.d.get("inputs")):
+            if isinstance(s, Map) and str(s.get("key")) in gone:
+                add("E05", r, "inputs", f"{r.id}: input {s.get('key')} is a withdrawn value")
+    return out
 
 
 # ---------------------------------------------------------------- check
@@ -559,7 +778,8 @@ def run_check(rec, gate=None, names_path=None, with_status=True):
         tests = dict(
             decided=lambda b: re.fullmatch(r"D-\d{3}", b),
             sourced=lambda b: SRC_RX.fullmatch(b) or GLOBAL_RX.fullmatch(b),
-            calculated=lambda b: re.fullmatch(r"K-\d{3}", b) or DOCS_RX.fullmatch(b),
+            calculated=lambda b: re.fullmatch(r"K-\d{3}", b) or DOCS_RX.fullmatch(b)
+            or RUN_RX.fullmatch(b),
             measured=lambda b: re.fullmatch(r"RN-\d{3}", b),
             assumed=lambda b: re.fullmatch(r"Q-\d{3}", b) and b in idx and not rec.is_closed(idx[b]))
         st = it.d.get("status")
@@ -591,6 +811,7 @@ def run_check(rec, gate=None, names_path=None, with_status=True):
             out.append(("E20", "record", 0, "no as_built baseline"))
         if not rec.items["procedure"]:
             out.append(("E20", "record", 0, "no procedure"))
+    out += check_models(rec)
     for it in rec.items["citation"]:
         ref = str(it.d.get("ref", ""))
         if "@" not in ref:
@@ -627,6 +848,25 @@ def check_generated(rec):
             elif m.group(3).strip() != table_md(rec, kind, fields).strip():
                 out.append(("E10", rel, line, f"table of {kind} differs from the generated one"))
     return out
+
+
+def tables_write(rec):
+    """Regenerate the tables between markers in docs/*.md; return the number changed."""
+    n = 0
+    for f in sorted((rec.root / "docs").glob("*.md")):
+        text = f.read_text(encoding="utf-8")
+
+        def fill(m):
+            kind, fields = m.group(1), m.group(2).split(",")
+            if kind not in KINDFILES:
+                return m.group(0)
+            return (f"<!-- tdr:table kind={kind} fields={m.group(2)} -->\n"
+                    f"{table_md(rec, kind, fields)}\n<!-- tdr:end -->")
+        new = TABLE_RX.sub(fill, text)
+        if new != text:
+            f.write_bytes(new.encode("utf-8"))
+            n += 1
+    return n
 
 
 def fmt_problems(probs):
@@ -794,9 +1034,9 @@ def tier_problems(rec, message):
             out.append(("E11", "message", 0, "T2 needs a check of method refute, "
                         "independent_model, or hand_calc"))
     if tier == "T3":
-        d = tr.get("Decision", "")
-        if not (d in rec.index and rec.index[d].kind == "decision"):
-            out.append(("E12", "message", 0, "T3 needs an existing decision"))
+        ds = [x.strip() for x in tr.get("Decision", "").split(",") if x.strip()]
+        if not ds or not all(x in rec.index and rec.index[x].kind == "decision" for x in ds):
+            out.append(("E12", "message", 0, "T3 needs existing decisions"))
     return out
 
 
@@ -887,6 +1127,8 @@ def main(argv=None):
         sub.add_parser(n, parents=[common]).add_argument("id")
     sub.add_parser("brief", parents=[common]).add_argument("ids", nargs="+")
     sub.add_parser("tier", parents=[common]).add_argument("--message", required=True)
+    sub.add_parser("tables", parents=[common])
+    sub.add_parser("stamp", parents=[common]).add_argument("id")
     sub.add_parser("mcp", parents=[common])
     a = ap.parse_args(argv)
     if a.cmd == "mcp":
@@ -902,6 +1144,27 @@ def main(argv=None):
         text = status_text(rec)
         (rec.root / "STATUS.md").write_bytes(text.encode("utf-8"))
         print(f"STATUS.md written, about {est_tokens(text)} tokens")
+        return 0
+    if a.cmd == "tables":
+        print(f"{tables_write(rec)} file(s) changed")
+        return 0
+    if a.cmd == "stamp":
+        it = rec.index.get(a.id)
+        md = rec.index.get(str(it.d.get("model"))) if it and it.kind == "model_run" else it
+        if not md or md.kind != "model":
+            print(f"not a model or a design run: {a.id}")
+            return 1
+        ver = model_version(rec, md)
+        if ver is None:
+            print(f"cannot compute the version of {md.id} (missing file or cycle)")
+            return 1
+        print(f"version: {ver}")
+        if it.kind == "model_run":
+            st = run_stamp(rec, it, ver)
+            if st is None:
+                print("cannot compute the stamp (an input does not resolve)")
+                return 1
+            print(f"stamp: {st}")
         return 0
     if a.cmd == "tier":
         probs = tier_problems(rec, Path(a.message).read_text(encoding="utf-8"))

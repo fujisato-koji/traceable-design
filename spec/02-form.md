@@ -212,3 +212,50 @@ Run logs follow the same split (1.4 of chapter 1).
 | Chapter 3 | One schema per kind of fact in 2.3; the status sheet, lookup, and brief commands; the tier check; the deny-list check; the verification records. |
 | Chapter 1 | S-15's status sheet and S-16's configurations are defined here. |
 | README | Passes: chapter 2 is drafted. |
+
+## 2.11 Proposed amendments (D-014)
+
+Everything in this section is proposed by [D-014](decisions.md) and is not in force.
+If the owner accepts D-014, each row below replaces the row it names in 2.3, 2.5, or 2.6.
+The current and proposed text of each are shown side by side in D-014.
+The rules and checks behind them are in 3.12 of [chapter 3](03-rules.md).
+
+### F-2 (proposed): two kinds added to the table of 2.3
+
+| Kind | Id form | Holds | Lives in |
+|------|---------|-------|----------|
+| Model (proposed) | MD-nn | the files of a program (code and its pinned environment file), its entry, a one line method with no numbers, basis, the models it uses, scope, role (analysis or onboard), the part it runs in (onboard), params and results (name, unit, optional min and max), the reason it was withdrawn | data |
+| Design run (proposed) | MD-nn.nn | model, date, who, model version, stamp, exact command, inputs (a param mapped to a value key, or to another run), settings, seed, outputs (a result mapped to a value key, never the number), tolerance, files written | data |
+
+A design run is never a Run (RN-nnn).
+RN-nnn stays for the physical thing, so that the comparison of measured with predicted values (F-6) stays clean.
+The version of a model and the stamp of a run are computed by the tool and checked against the recorded ones; they are not trusted.
+
+### F-5 (proposed): tiers for models
+
+"The same checked model" in the T1 row means: the same id, method line, params, results, and scope, and every run that a value or a check cites reruns within its tolerance.
+
+| Tier | Models and requirements (proposed wording) |
+|------|---------------------------------------------|
+| T0 Record | Also: a backfill of a model or a run that reproduces recorded values, or a restamp after an edit that moves nothing. Moving a requirement from awaiting to confirmed by an owner decision, citing that decision. |
+| T1 Value | Also: a code edit or an input change that keeps the model the same, with the reruns in the same change. |
+| T2 Claim | Also: a new model, a changed method, params, results, or scope, a cited output that moves beyond its tolerance, a run outside its param domain, the repair of a defect a check found, and the addition of a requirement that awaits the owner. |
+| T3 Limit | Also: any change to a model of role onboard that an as built baseline lists, a change that moves a design point, a limit, or a hazard control, and any change to a confirmed requirement. |
+
+### 2.5 gate (proposed): design to build
+
+The row of 2.5 gains three conditions and one rewording.
+Every part has a price value that is sourced or decided.
+The hazard list is not empty, unless an owner decision says none apply.
+Every calculated value that a design point rests on cites a fresh run of a model that has a passing refute, independent_model, or hand_calc check at its current version.
+"Every requirement has a design value" reads "design point".
+
+The order of work in 2.5 gains three items.
+In 1.1, list the hazards to people and property, and revisit them for each candidate form in 1.2.
+In 1.2 and 1.3, record the parts and the interfaces between them.
+Record a model before its first value.
+
+### F-8 (proposed): where gaps in the standard are reported
+
+A project records each gap it finds in the standard as an open item of kind finding that waits for the keeper of the standard, naming the S, N, or E ids and the kind of gap.
+It files the gap as an issue on the standard's repository, using a fixed template, with measured shares only (S-14, S-21).
